@@ -390,6 +390,7 @@ template <class EdgeDataT> class InternalDataFacade : public BaseDataFacade<Edge
             BOOST_ASSERT(!resulting_phantom_node_vector.empty());
             resulting_phantom_node = resulting_phantom_node_vector.front();
         }
+
         return result;
     }
 
@@ -404,6 +405,20 @@ template <class EdgeDataT> class InternalDataFacade : public BaseDataFacade<Edge
         }
 
         return m_static_rtree->IncrementalFindPhantomNodeForCoordinate(
+            input_coordinate, resulting_phantom_node_vector, number_of_results);
+    }
+
+    bool
+    IncrementalFindPhantomNodeForCoordinateWithDistance(const FixedPointCoordinate &input_coordinate,
+                                                        std::vector<std::pair<PhantomNode, double>> &resulting_phantom_node_vector,
+                                                        const unsigned number_of_results) final
+    {
+        if (!m_static_rtree.get())
+        {
+            LoadRTree();
+        }
+
+        return m_static_rtree->IncrementalFindPhantomNodeForCoordinateWithDistance(
             input_coordinate, resulting_phantom_node_vector, number_of_results);
     }
 
