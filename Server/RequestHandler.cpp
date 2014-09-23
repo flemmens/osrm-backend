@@ -35,7 +35,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../Util/json_renderer.hpp"
 #include "../Util/simple_logger.hpp"
 #include "../Util/StringUtil.h"
-#include "../typedefs.h"
 
 #include <osrm/Reply.h>
 #include <osrm/RouteParameters.h>
