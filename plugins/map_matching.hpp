@@ -18,8 +18,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 or see http://www.gnu.org/licenses/agpl.txt.
  */
 
-#ifndef MAP_MATCHING_PLUGIN__
-#define MAP_MATCHING_PLUGIN__
+#ifndef MAP_MATCHING_PLUGIN_H
+#define MAP_MATCHING_PLUGIN_H
 
 #include "plugin_base.hpp"
 
@@ -105,4 +105,4 @@ template <class DataFacadeT> class MapMatchingPlugin : public BasePlugin
     DataFacadeT *facade;
 };
 
-#endif /* MAP_MATCHING_PLUGIN__ */
+#endif /* MAP_MATCHING_PLUGIN_H */
