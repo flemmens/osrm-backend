@@ -18,8 +18,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 or see http://www.gnu.org/licenses/agpl.txt.
  */
 
-#ifndef MAP_MATCHING__
-#define MAP_MATCHING__
+#ifndef MAP_MATCHING_H
+#define MAP_MATCHING_H
 
 #include "routing_base.hpp"
 
@@ -33,7 +33,7 @@ typedef std::vector<CandidateList> CandidateLists;
 typedef std::pair<PhantomNodes, double> PhantomNodesWithProbability;
 }
 
-template <class DataFacadeT> class MapMatching : public BasicRoutingInterface<DataFacadeT>
+template <class DataFacadeT> class MapMatching final : public BasicRoutingInterface<DataFacadeT>
 {
     typedef BasicRoutingInterface<DataFacadeT> super;
     typedef typename SearchEngineData::QueryHeap QueryHeap;
@@ -101,8 +101,6 @@ constexpr static const double beta = 1.;
         : super(facade), engine_working_data(engine_working_data)
     {
     }
-
-    ~MapMatching() {}
 
     void operator()(Matching::CandidateLists &candidate_lists, RawRouteData &raw_route_data) const
     {
@@ -253,4 +251,4 @@ constexpr static const double beta = 1.;
     }
 };
 
-#endif /* MAP_MATCHING__ */
+#endif /* MAP_MATCHING_H */
