@@ -27,6 +27,7 @@ or see http://www.gnu.org/licenses/agpl.txt.
 #include "../Util/container.hpp"
 
 #include <algorithm>
+#include <iomanip>
 
 namespace Matching
 {
@@ -43,10 +44,15 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
 
     constexpr static const double sigma_z = 4.07;
 
-    constexpr double emission_probability(const float distance) const
+    constexpr double emission_probability(const double distance) const
     {
         return (1. / (std::sqrt(2. * M_PI) * sigma_z)) *
-               std::exp(-0.5 * std::pow(2, (distance / sigma_z)));
+               std::exp(-0.5 * std::pow((distance / sigma_z), 2.));
+    }
+
+    constexpr double log_emission_probability(const double distance) const
+    {
+        return std::log2(emission_probability(distance));
     }
 
     // TODO: needs to be estimated from the input locations
@@ -90,7 +96,7 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
     }
 
     // translates a distance into how likely it is an input
-    double DistanceToProbability(const float distance) const
+    double DistanceToProbability(const double distance) const
     {
         if (0. > distance)
         {
@@ -126,7 +132,11 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
 
         for (auto s = 0; s < state_size; ++s)
         {
-            SimpleLogger().Write() << "s: " << s << "/" << state_size;
+            SimpleLogger().Write() << "initializing s: " << s << "/" << state_size;
+            SimpleLogger().Write() << " distance: " << timestamp_list[0][s].second
+                                   << " at " << timestamp_list[0][s].first.location
+                                   << " prob " << std::setprecision(10) << emission_probability(timestamp_list[0][s].second)
+                                   << " logprob " << log_emission_probability(timestamp_list[0][s].second);
             // TODO: implement
             const double emission_pr = 0.;
             viterbi[s][0] = emission_pr;
