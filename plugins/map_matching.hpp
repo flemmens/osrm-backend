@@ -86,10 +86,17 @@ template <class DataFacadeT> class MapMatchingPlugin : public BasePlugin
                 reply = http::Reply::StockReply(http::Reply::badRequest);
                 return;
             }
+
+            while (candidate_lists[current_coordinate].size() < 10)
+            {
+                // TODO: add dummy candidates, if any are missing
+                // TODO: add factory method to get an invalid PhantomNode/Distance pair
+            }
         }
         SimpleLogger().Write() << "4";
 
-        search_engine_ptr->map_matching(candidate_lists, raw_route);
+        // call the actual map matching
+        search_engine_ptr->map_matching(10, candidate_lists, raw_route);
 
         if (INVALID_EDGE_WEIGHT == raw_route.shortest_path_length)
         {
