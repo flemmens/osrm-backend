@@ -96,7 +96,7 @@ template <class DataFacadeT> class MapMatchingPlugin : public BasePlugin
         SimpleLogger().Write() << "4";
 
         // call the actual map matching
-        search_engine_ptr->map_matching(10, candidate_lists, raw_route);
+        search_engine_ptr->map_matching(10, route_parameters.coordinates, candidate_lists, raw_route);
 
         if (INVALID_EDGE_WEIGHT == raw_route.shortest_path_length)
         {
