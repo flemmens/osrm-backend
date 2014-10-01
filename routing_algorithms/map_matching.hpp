@@ -28,6 +28,7 @@ or see http://www.gnu.org/licenses/agpl.txt.
 
 #include <algorithm>
 #include <iomanip>
+#include <numeric>
 
 namespace Matching
 {
@@ -90,9 +91,9 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
     // 29 32.21683062
     // 30 34.56991141
 
-    constexpr double transition_probability(const float distance, const float beta) const
+    constexpr double transition_probability(const float d_t, const float beta) const
     {
-        return (1. / beta) * std::exp(-distance / beta);
+        return (1. / beta) * std::exp(-d_t / beta);
     }
 
     // translates a distance into how likely it is an input
@@ -105,6 +106,41 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
         return 1. - 1. / (1. + exp((-distance + 35.) / 6.));
     }
 
+    double compute_dt(const FixedPointCoordinate &location1,
+                      const FixedPointCoordinate &location2,
+                      const Matching::CandidateList &candidate_list_1,
+                      const Matching::CandidateList &candidate_list_2)
+    {
+        // great circle distance of two locations - median/avg dist table(candidate list1/2)
+        std::vector<EdgeWeight> distance_list;
+        for (const auto &candidate_1 : candidate_list_1)
+        {
+            for (const auto &candidate_2 : candidate_list_2)
+            {
+                const EdgeWeight current_weight = 0; // TODO: compute path distance between the two
+
+                distance_list.push_back(current_weight);
+            }
+        }
+
+
+        const auto average_network_distance = std::accumulate(distance_list.begin(), distance_list.end(), 0) / distance_list.size();
+
+        std::nth_element(distance_list.begin(), distance_list.begin() + distance_list.size()/2, distance_list.end());
+        const EdgeWeight median_network_distance = distance_list[distance_list.size()/2];
+
+        const auto great_circle_distance = FixedPointCoordinate::ApproximateDistance(location1, location2);
+
+        // TODO: choose which one is more effective
+        const auto approximated_network_distance = median_network_distance;
+
+        if (great_circle_distance > approximated_network_distance)
+        {
+            return great_circle_distance - approximated_network_distance;
+        }
+        return approximated_network_distance - great_circle_distance;
+    }
+
   public:
     MapMatching(DataFacadeT *facade, SearchEngineData &engine_working_data)
         : super(facade), engine_working_data(engine_working_data)
@@ -113,6 +149,7 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
 
     void operator()(const unsigned state_size,
                     Matching::CandidateLists &timestamp_list,
+                    std::vector<FixedPointCoordinate> coordinate_list,
                     RawRouteData &raw_route_data) const
     {
         BOOST_ASSERT(state_size != std::numeric_limits<unsigned>::max());
@@ -144,8 +181,24 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
         }
         SimpleLogger().Write() << "b";
 
-        for (auto t = 0; t < timestamp_list.size(); ++t)
+        std::vector<double> d_t_list, median_select_d_t_list;
+        for (auto t = 1; t < timestamp_list.size(); ++t)
         {
+            d_t_list.push_back(compute_dt(coordinate_list[t-1], coordinate_list[t],
+                                          timestamp_list[t-1], timestamp_list[t]));
+            median_select_d_t_list.push_back(d_t_list.back());
+        }
+
+        std::nth_element(median_select_d_t_list.begin(),
+                         median_select_d_t_list.begin() + median_select_d_t_list.size()/2,
+                         median_select_d_t_list.end());
+        const auto median_d_t = median_select_d_t_list[median_select_d_t_list.size()/2];
+
+        const auto beta = (1./std::log(2))*median_d_t;
+
+        for (auto t = 1; t < timestamp_list.size(); ++t)
+        {
+            // compute d_t for this timestamp and the next one
             for (auto s = 0; s < state_size; ++s)
             {
                 for (auto s_prime = 0; s_prime < state_size; ++s_prime)
@@ -153,7 +206,7 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
                     // TODO: implement
                     const double emission_pr = 0.;
                     // TODO: implement
-                    const double transition_pr = 0.;
+                    const double transition_pr = transition_probability(beta, d_t_list[t])
                     const double new_value = viterbi[s][t] * emission_pr * transition_pr;
                     if (new_value > viterbi[s_prime][t])
                     {
