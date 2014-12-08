@@ -282,14 +282,13 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
         }
         SimpleLogger().Write() << "Determining most plausible end state";
         SimpleLogger().Write() << "timestamps: " << timestamp_list.size();
-        const auto number_of_timestamps = timestamp_list.size();
-        const auto max_element_iter = std::max_element(viterbi[number_of_timestamps].begin(),
-                                                       viterbi[number_of_timestamps].end());
-        auto parent_index = std::distance(max_element_iter, viterbi[number_of_timestamps].begin());
+        const auto max_element_iter = std::max_element(viterbi[state_size-1].begin(),
+                                                       viterbi[state_size-1].end());
+        auto parent_index = std::distance(max_element_iter, viterbi[state_size-1].begin());
         std::deque<std::size_t> reconstructed_indices;
 
         SimpleLogger().Write() << "Backtracking to find most plausible state sequence";
-        for (auto i = number_of_timestamps - 1; i > 0; --i)
+        for (auto i = timestamp_list.size() - 1; i > 0; --i)
         {
             SimpleLogger().Write() << "[" << i << "] parent: " << parent_index ;
             reconstructed_indices.push_front(parent_index);
