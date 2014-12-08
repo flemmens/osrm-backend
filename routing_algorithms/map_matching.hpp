@@ -242,9 +242,10 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
                 << timestamp_list[0][s].first.location << " prob " << std::setprecision(10)
                 << emission_probability(timestamp_list[0][s].second) << " logprob "
                 << log_probability(emission_probability(timestamp_list[0][s].second));
-            // TODO: implement
-            const double emission_pr = 0.;
-            viterbi[s][0] = emission_pr;
+
+            // this might need to be squared as pi_s is also defined as the emission
+            // probability in the paper.
+            viterbi[s][0] = emission_probability(timestamp_list[0][s].second);
             parent[s][0] = s;
         }
         SimpleLogger().Write() << "running viterbi algorithm: ";
