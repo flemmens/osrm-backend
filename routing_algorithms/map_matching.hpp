@@ -219,7 +219,7 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
     void operator()(const unsigned state_size,
                     const Matching::CandidateLists &timestamp_list,
                     const std::vector<FixedPointCoordinate> coordinate_list,
-                    RawRouteData &raw_route_data) const
+                    std::vector<PhantomNode>& matched_nodes) const
     {
         BOOST_ASSERT(state_size != std::numeric_limits<unsigned>::max());
         BOOST_ASSERT(state_size != 0);
@@ -299,10 +299,11 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
 
         SimpleLogger().Write() << "Computing most plausible sequence of phantom nodes";
 
+        matched_nodes.resize(reconstructed_indices.size());
         for (auto i = 0; i < reconstructed_indices.size(); ++i)
         {
             auto location_index = reconstructed_indices[i];
-            SimpleLogger().Write() << std::setprecision(8) << "location " << coordinate_list[i] << " to " << timestamp_list[i][location_index].first.location;
+            matched_nodes[i] = timestamp_list[i][location_index].first;
         }
 
         SimpleLogger().Write() << "done";
