@@ -63,8 +63,6 @@ template <class DataFacadeT> class MapMatchingPlugin : public BasePlugin
     void HandleRequest(const RouteParameters &route_parameters, http::Reply &reply) final
     {
         // check number of parameters
-
-        SimpleLogger().Write() << "1";
         if (2 > route_parameters.coordinates.size() ||
             std::any_of(begin(route_parameters.coordinates),
                         end(route_parameters.coordinates),
@@ -76,13 +74,10 @@ template <class DataFacadeT> class MapMatchingPlugin : public BasePlugin
             reply = http::Reply::StockReply(http::Reply::badRequest);
             return;
         }
-        SimpleLogger().Write() << "2";
-
         RawRouteData raw_route;
         Matching::CandidateLists candidate_lists;
         candidate_lists.resize(route_parameters.coordinates.size());
 
-        SimpleLogger().Write() << "3";
         // fetch  10 candidates for each given coordinate
         for (const auto current_coordinate : osrm::irange<std::size_t>(0, candidate_lists.size()))
         {
@@ -95,13 +90,16 @@ template <class DataFacadeT> class MapMatchingPlugin : public BasePlugin
                 return;
             }
 
+            BOOST_ASSERT(candidate_lists[current_coordinate].size() == 10);
+
+            /*
             while (candidate_lists[current_coordinate].size() < 10)
             {
                 // TODO: add dummy candidates, if any are missing
                 // TODO: add factory method to get an invalid PhantomNode/Distance pair
             }
+            */
         }
-        SimpleLogger().Write() << "4";
 
         // call the actual map matching
         std::vector<PhantomNode> matched_nodes;

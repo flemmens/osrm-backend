@@ -30,6 +30,8 @@ or see http://www.gnu.org/licenses/agpl.txt.
 #include <iomanip>
 #include <numeric>
 
+#include <fstream>
+
 namespace Matching
 {
 typedef std::vector<std::pair<PhantomNode, double>> CandidateList;
@@ -228,9 +230,9 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
         SimpleLogger().Write() << "state_size: " << state_size;
 
         std::vector<std::vector<double>> viterbi(state_size,
-                                                 std::vector<double>(timestamp_list.size() + 1, 0));
+                                                 std::vector<double>(timestamp_list.size(), 0));
         std::vector<std::vector<std::size_t>> parent(
-            state_size, std::vector<std::size_t>(timestamp_list.size() + 1, 0));
+            state_size, std::vector<std::size_t>(timestamp_list.size(), 0));
 
         SimpleLogger().Write() << "initializing state probabilties: ";
 
@@ -250,14 +252,45 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
         }
         SimpleLogger().Write() << "running viterbi algorithm: ";
 
+        std::cout << "viterbi before: " << std::endl;
+        for (auto s = 0; s < state_size; ++s)
+        {
+            for (auto t = 0; t < timestamp_list.size(); t++)
+            {
+                std::cout << viterbi[s][t] << "\t";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "parent before: " << std::endl;
+        for (auto s = 0; s < state_size; ++s)
+        {
+            for (auto t = 0; t < timestamp_list.size(); t++)
+            {
+                std::cout << parent[s][t] << "\t";
+            }
+            std::cout << std::endl;
+        }
+
         // attention, this call is relatively expensive
         const auto beta = get_beta(state_size, timestamp_list, coordinate_list);
 
+        std::ofstream graph_data("graph_data.py");
+        graph_data << "edges = [" << std::endl;
+
+        graph_data << "[";
+        for (unsigned s = 0; s < state_size; s++)
+        {
+            graph_data << viterbi[s][0] << ", ";
+        }
+        graph_data << "]," << std::endl;
+
         for (auto t = 1; t < timestamp_list.size(); ++t)
         {
+            graph_data << "[";
             // compute d_t for this timestamp and the next one
             for (auto s = 0; s < state_size; ++s)
             {
+                graph_data << "[";
                 for (auto s_prime = 0; s_prime < state_size; ++s_prime)
                 {
                     // how likely is candidate s_prime at time t to be emitted?
@@ -271,20 +304,52 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
 
                     // plug probabilities together. TODO: change to addition for logprobs
                     const double transition_pr = transition_probability(beta, d_t);
-                    const double new_value = viterbi[s][t] * emission_pr * transition_pr;
+                    const double new_value = viterbi[s][t-1] * emission_pr * transition_pr;
+                    graph_data << "(" << viterbi[s][t-1] << ", " << emission_pr << ", " << transition_pr << "), ";
                     if (new_value > viterbi[s_prime][t])
                     {
                         viterbi[s_prime][t] = new_value;
                         parent[s_prime][t] = s;
                     }
                 }
+                graph_data << "], " << std::endl;
+            }
+            graph_data << "]," << std::endl;
+        }
+        graph_data << "]" << std::endl;
+        graph_data.close();
+
+        std::cout << "viterbi after: " << std::endl;
+        for (auto s = 0; s < state_size; ++s)
+        {
+            for (auto t = 0; t < timestamp_list.size(); t++)
+            {
+                std::cout << viterbi[s][t] << "\t";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "parent after: " << std::endl;
+        for (auto s = 0; s < state_size; ++s)
+        {
+            for (auto t = 0; t < timestamp_list.size(); t++)
+            {
+                std::cout << parent[s][t] << "\t";
+            }
+            std::cout << std::endl;
+        }
+
+        SimpleLogger().Write() << "Determining most plausible end state";
+        // loop through the columns, and only compare the last entry
+        auto max_element_iter = viterbi.begin();
+        for (auto current = viterbi.begin(); current != viterbi.end(); current++)
+        {
+            if (max_element_iter->at(timestamp_list.size()-1) < current->at(timestamp_list.size()-1))
+            {
+                max_element_iter = current;
             }
         }
-        SimpleLogger().Write() << "Determining most plausible end state";
-        SimpleLogger().Write() << "timestamps: " << timestamp_list.size();
-        const auto max_element_iter = std::max_element(viterbi[state_size-1].begin(),
-                                                       viterbi[state_size-1].end());
-        auto parent_index = std::distance(max_element_iter, viterbi[state_size-1].begin());
+        auto parent_index = std::distance(viterbi.begin(), max_element_iter);
+        std::cout << "Selected maxium: " << max_element_iter->at(timestamp_list.size()-1) << " at index " << parent_index;
         std::deque<std::size_t> reconstructed_indices;
 
         SimpleLogger().Write() << "Backtracking to find most plausible state sequence";
