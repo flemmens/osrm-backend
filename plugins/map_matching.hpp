@@ -145,8 +145,10 @@ template <class DataFacadeT> class MapMatchingPlugin : public BasePlugin
             break;
         }
 
+        JSON::Object result;
         descriptor->SetConfig(descriptor_config);
-        descriptor->Run(raw_route, reply);
+        descriptor->Run(raw_route, result);
+        descriptor->Render(result, reply.content);
 
         return;
     }
