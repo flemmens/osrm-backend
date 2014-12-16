@@ -103,7 +103,8 @@ template <class DataFacadeT> class MapMatchingPlugin : public BasePlugin
 
         // call the actual map matching
         std::vector<PhantomNode> matched_nodes;
-        search_engine_ptr->map_matching(10, candidate_lists, route_parameters.coordinates, matched_nodes);
+        JSON::Object debug_info;
+        search_engine_ptr->map_matching(10, candidate_lists, route_parameters.coordinates, matched_nodes, debug_info);
 
         reply.status = http::Reply::ok;
 
@@ -148,6 +149,31 @@ template <class DataFacadeT> class MapMatchingPlugin : public BasePlugin
         JSON::Object result;
         descriptor->SetConfig(descriptor_config);
         descriptor->Run(raw_route, result);
+
+        /*
+         * Add some debugging information.
+         */
+
+        JSON::Array json_list;
+        for (const auto& list : candidate_lists)
+        {
+            JSON::Array candidates;
+            for (const auto candidate : list)
+            {
+                JSON::Array json_candidate;
+                JSON::Array json_coordinates;
+                PhantomNode node = candidate.first;
+                json_coordinates.values.push_back(node.location.lat / COORDINATE_PRECISION);
+                json_coordinates.values.push_back(node.location.lon / COORDINATE_PRECISION);
+                json_candidate.values.emplace_back(json_coordinates);
+                json_candidate.values.emplace_back(candidate.second);
+                candidates.values.emplace_back(json_candidate);
+            }
+            json_list.values.emplace_back(candidates);
+        }
+        result.values["candidates"] = json_list;
+        result.values["debug"] = debug_info;
+
         descriptor->Render(result, reply.content);
 
         return;

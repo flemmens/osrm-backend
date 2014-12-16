@@ -221,13 +221,12 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
     void operator()(const unsigned state_size,
                     const Matching::CandidateLists &timestamp_list,
                     const std::vector<FixedPointCoordinate> coordinate_list,
-                    std::vector<PhantomNode>& matched_nodes) const
+                    std::vector<PhantomNode>& matched_nodes,
+                    JSON::Object& debug_info) const
     {
         BOOST_ASSERT(state_size != std::numeric_limits<unsigned>::max());
         BOOST_ASSERT(state_size != 0);
-        SimpleLogger().Write() << "matching starts with " << timestamp_list.size() << " locations";
 
-        SimpleLogger().Write() << "state_size: " << state_size;
 
         std::vector<std::vector<double>> viterbi(state_size,
                                                  std::vector<double>(timestamp_list.size(), 0));
@@ -236,6 +235,8 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
 
         SimpleLogger().Write() << "initializing state probabilties: ";
 
+        JSON::Array json_viterbi;
+        JSON::Array json_initial_viterbi;
         for (auto s = 0; s < state_size; ++s)
         {
             SimpleLogger().Write() << "initializing s: " << s << "/" << state_size;
@@ -249,48 +250,23 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
             // probability in the paper.
             viterbi[s][0] = emission_probability(timestamp_list[0][s].second);
             parent[s][0] = s;
+            json_initial_viterbi.values.push_back(viterbi[s][0]);
         }
+        json_viterbi.values.push_back(json_initial_viterbi);
         SimpleLogger().Write() << "running viterbi algorithm: ";
-
-        std::cout << "viterbi before: " << std::endl;
-        for (auto s = 0; s < state_size; ++s)
-        {
-            for (auto t = 0; t < timestamp_list.size(); t++)
-            {
-                std::cout << viterbi[s][t] << "\t";
-            }
-            std::cout << std::endl;
-        }
-        std::cout << "parent before: " << std::endl;
-        for (auto s = 0; s < state_size; ++s)
-        {
-            for (auto t = 0; t < timestamp_list.size(); t++)
-            {
-                std::cout << parent[s][t] << "\t";
-            }
-            std::cout << std::endl;
-        }
 
         // attention, this call is relatively expensive
         const auto beta = get_beta(state_size, timestamp_list, coordinate_list);
 
-        std::ofstream graph_data("graph_data.py");
-        graph_data << "edges = [" << std::endl;
-
-        graph_data << "[";
-        for (unsigned s = 0; s < state_size; s++)
-        {
-            graph_data << viterbi[s][0] << ", ";
-        }
-        graph_data << "]," << std::endl;
-
+        JSON::Array json_timestamps;
         for (auto t = 1; t < timestamp_list.size(); ++t)
         {
-            graph_data << "[";
+            JSON::Array json_transition_rows;
+            JSON::Array json_viterbi_col;
             // compute d_t for this timestamp and the next one
             for (auto s = 0; s < state_size; ++s)
             {
-                graph_data << "[";
+                JSON::Array json_row;
                 for (auto s_prime = 0; s_prime < state_size; ++s_prime)
                 {
                     // how likely is candidate s_prime at time t to be emitted?
@@ -305,38 +281,29 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
                     // plug probabilities together. TODO: change to addition for logprobs
                     const double transition_pr = transition_probability(beta, d_t);
                     const double new_value = viterbi[s][t-1] * emission_pr * transition_pr;
-                    graph_data << "(" << viterbi[s][t-1] << ", " << emission_pr << ", " << transition_pr << "), ";
+
+                    JSON::Array json_element;
+                    json_element.values.push_back(viterbi[s][t-1]);
+                    json_element.values.push_back(emission_pr);
+                    json_element.values.push_back(transition_pr);
+
+                    json_row.values.push_back(json_element);
+
                     if (new_value > viterbi[s_prime][t])
                     {
                         viterbi[s_prime][t] = new_value;
                         parent[s_prime][t] = s;
                     }
                 }
-                graph_data << "], " << std::endl;
+                json_transition_rows.values.push_back(json_row);
+                json_viterbi_col.values.push_back(viterbi[s][t]);
             }
-            graph_data << "]," << std::endl;
+            json_viterbi.values.push_back(json_viterbi_col);
+            json_timestamps.values.push_back(json_transition_rows);
         }
-        graph_data << "]" << std::endl;
-        graph_data.close();
 
-        std::cout << "viterbi after: " << std::endl;
-        for (auto s = 0; s < state_size; ++s)
-        {
-            for (auto t = 0; t < timestamp_list.size(); t++)
-            {
-                std::cout << viterbi[s][t] << "\t";
-            }
-            std::cout << std::endl;
-        }
-        std::cout << "parent after: " << std::endl;
-        for (auto s = 0; s < state_size; ++s)
-        {
-            for (auto t = 0; t < timestamp_list.size(); t++)
-            {
-                std::cout << parent[s][t] << "\t";
-            }
-            std::cout << std::endl;
-        }
+        debug_info.values["transitions"] = json_timestamps;
+        debug_info.values["viterbi"] = json_viterbi;
 
         SimpleLogger().Write() << "Determining most plausible end state";
         // loop through the columns, and only compare the last entry
