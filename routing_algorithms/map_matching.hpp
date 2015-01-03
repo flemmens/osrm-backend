@@ -115,9 +115,9 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
                     const std::vector<FixedPointCoordinate> coordinate_list) const
     {
         std::vector<double> d_t_list, median_select_d_t_list;
-        for (auto t = 1; t < timestamp_list.size(); ++t)
+        for (auto t = 1u; t < timestamp_list.size(); ++t)
         {
-            for (auto s = 0; s < state_size; ++s)
+            for (auto s = 0u; s < state_size; ++s)
             {
                 d_t_list.push_back(get_distance_difference(coordinate_list[t - 1],
                                                            coordinate_list[t],
@@ -237,7 +237,7 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
 
         JSON::Array json_viterbi;
         JSON::Array json_initial_viterbi;
-        for (auto s = 0; s < state_size; ++s)
+        for (auto s = 0u; s < state_size; ++s)
         {
             SimpleLogger().Write() << "initializing s: " << s << "/" << state_size;
             SimpleLogger().Write()
@@ -259,15 +259,15 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
         const auto beta = get_beta(state_size, timestamp_list, coordinate_list);
 
         JSON::Array json_timestamps;
-        for (auto t = 1; t < timestamp_list.size(); ++t)
+        for (auto t = 1u; t < timestamp_list.size(); ++t)
         {
             JSON::Array json_transition_rows;
             JSON::Array json_viterbi_col;
             // compute d_t for this timestamp and the next one
-            for (auto s = 0; s < state_size; ++s)
+            for (auto s = 0u; s < state_size; ++s)
             {
                 JSON::Array json_row;
-                for (auto s_prime = 0; s_prime < state_size; ++s_prime)
+                for (auto s_prime = 0u; s_prime < state_size; ++s_prime)
                 {
                     // how likely is candidate s_prime at time t to be emitted?
                     const double emission_pr = emission_probability(timestamp_list[t][s_prime].second);
@@ -320,7 +320,7 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
         std::deque<std::size_t> reconstructed_indices;
 
         SimpleLogger().Write() << "Backtracking to find most plausible state sequence";
-        for (auto i = timestamp_list.size() - 1; i > 0; --i)
+        for (auto i = timestamp_list.size() - 1u; i > 0u; --i)
         {
             SimpleLogger().Write() << "[" << i << "] parent: " << parent_index ;
             reconstructed_indices.push_front(parent_index);
@@ -332,7 +332,7 @@ template <class DataFacadeT> class MapMatching final : public BasicRoutingInterf
         SimpleLogger().Write() << "Computing most plausible sequence of phantom nodes";
 
         matched_nodes.resize(reconstructed_indices.size());
-        for (auto i = 0; i < reconstructed_indices.size(); ++i)
+        for (auto i = 0u; i < reconstructed_indices.size(); ++i)
         {
             auto location_index = reconstructed_indices[i];
             matched_nodes[i] = timestamp_list[i][location_index].first;
