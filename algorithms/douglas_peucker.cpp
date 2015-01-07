@@ -90,7 +90,7 @@ void DouglasPeucker::Run(std::vector<SegmentInformation> &input_geometry, const 
 
 void DouglasPeucker::Run(RandomAccessIt begin, RandomAccessIt end, const unsigned zoom_level)
 {
-    unsigned size = std::distance(begin, end);
+    auto size = std::distance(begin, end);
     if (size < 2)
     {
         return;
