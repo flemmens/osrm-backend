@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2014, Project OSRM, Dennis Luxen, others
+Copyright (c) 2015, Project OSRM, Dennis Luxen, others
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -82,13 +82,12 @@ template <class DataFacadeT> class GPXDescriptor final : public BaseDescriptor<D
                 {
                     const FixedPointCoordinate current_coordinate =
                         super::facade->GetCoordinateOfNode(path_data.node);
-                    AddRoutePoint(current_coordinate, reply.content);
+                    AddRoutePoint(current_coordinate, json_route);
                 }
             }
             AddRoutePoint(raw_route.segment_end_coordinates.back().target_phantom.location,
                           json_route);
         }
-        // JSON::gpx_render(reply.content, json_route);
         json_result.values["route"] = json_route;
     }
 };

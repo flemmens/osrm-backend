@@ -69,7 +69,7 @@ add_library(PHANTOMNODE OBJECT data_structures/phantom_node.cpp)
 add_library(EXCEPTION OBJECT Util/osrm_exception.cpp)
 
 include_directories(${CMAKE_BINARY_DIR})
-set(ExtractorSources extractor.cpp ${ExtractorGlob})
+set(ExtractorSources extract.cpp ${ExtractorGlob})
 add_executable(osrm-extract ${ExtractorSources} $<TARGET_OBJECTS:COORDINATE> $<TARGET_OBJECTS:FINGERPRINT> $<TARGET_OBJECTS:GITDESCRIPTION> $<TARGET_OBJECTS:IMPORT> $<TARGET_OBJECTS:LOGGER> $<TARGET_OBJECTS:EXCEPTION>)
 
 add_library(RESTRICTION OBJECT data_structures/restriction_map.cpp)

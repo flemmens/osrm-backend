@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../descriptors/descriptor_base.hpp"
 #include "../descriptors/gpx_descriptor.hpp"
 #include "../descriptors/json_descriptor.hpp"
-#include "../Descriptors/ProtoBufDescriptor.h"
+#include "../descriptors/protobuf_descriptor.hpp"
 #include "../Util/integer_range.hpp"
 #include "../Util/json_renderer.hpp"
 #include "../Util/make_unique.hpp"
